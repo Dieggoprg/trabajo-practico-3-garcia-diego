@@ -1,71 +1,87 @@
-const buscarImput = document.querySelector("form-control me-2");
-const btnBuscar = document.querySelector("btn btn-warning");
-const btnLimpiar = document.getElementById("btn btn-success");
+const buscarInput = document.querySelector('input[placeholder="Buscar personajes"]');
+const btnBuscar = document.querySelector(".btn.btn-warning");
+const btnLimpiar = document.querySelector(".btn.btn-success");
 const contenedorMensajes = document.getElementById("message");
-const contenedorDePersonajes = document.getElementById("personaje"); 
+const contenedorDePersonajes = document.getElementById("Personaje");
 
-// Arreglo para guardar personajes encontrados
-let PersonajesArray = [];
+let todosLosPersonajes = [];
 
-// Función para limpiar los resultados anteriores y los mensajes
-function LimpiarPersonaje() {
-  contenedorDePersonajes.innerHTML = ''; // limpio los personajes 
-  contenedorMensajes.textContent = ''; // limpio los mensajes 
-  contenedorDePersonajes = [];
-}
-
+// Mostrar mensaje
 function showMessage(text) {
-  messageContainer.textContent = text;
+  contenedorMensajes.textContent = text;
 }
 
-// Función para renderizar tarjetas de personajes
-function renderTarjetas(Personaje) {
-  Personaje.forEach(Personaje => {
-    const Tarjeta = document.createElement('div');
-    Tarjeta.classList.add('Tarjeta-Personaje'); 
+// Limpiar pantalla
+function LimpiarPersonaje() {
+  contenedorDePersonajes.innerHTML = '';
+  contenedorMensajes.textContent = '';
+}
 
-    Tarjeta.innerHTML = `
-      <img src="${Personaje.image}" alt="${character.name}" class ="Personaje-img"/>
-      <h3>${Personaje.name}</h3>
-      <p><strong>Raza:</strong> ${Personaje.race}</p>
-      <p><strong>Género:</strong> ${Personaje.gender}</p>
+// Renderizar tarjetas
+function renderTarjetas(personajes) {
+  contenedorDePersonajes.innerHTML = ''; // limpiar antes de renderizar
+  personajes.forEach(personaje => {
+    const tarjeta = document.createElement('div');
+    tarjeta.classList.add('Tarjeta-Personaje', 'col-12', 'col-md-4', 'd-flex', 'align-items-stretch', 'justify-content-center');
+    tarjeta.innerHTML = `
+      <div class="card h-100 shadow-lg border-warning border-2">
+        <img src="${personaje.image}" alt="${personaje.name}" class="card-img-top"/>
+        <div class="card-body d-flex flex-column justify-content-between">
+          <div>
+            <h3 class="card-title text-center mb-2" style="font-family: 'Luckiest Guy', cursive; color: #ff9800;">${personaje.name}</h3>
+            <p class="card-text mb-1"><strong>Raza:</strong> ${personaje.race}</p>
+            <p class="card-text mb-3"><strong>Género:</strong> ${personaje.gender}</p>
+          </div>
+          <button class="btn btn-warning mt-auto w-100 ver-detalles-btn" data-id="${personaje.id}">Ver detalles</button>
+        </div>
+      </div>
     `;
-
-    contenedorDePersonajes.appendChild(Tarjeta);
+    contenedorDePersonajes.appendChild(tarjeta);
   });
 }
 
-// Función asincrónica para buscar personajes por nombre usando la API de Dragon Ball
-async function searchCharactersByName(name) {
+// Obtener todos los personajes al inicio
+async function cargarPersonajesInicio() {
   try {
-    const respuesta = await fetch("https://dragonball-api.com/api/characters?name=${encodeURIComponent(name)}");
-
-    if (!respuesta.ok) {
-      throw new Error("Error al consultar la API. Código: ${response.status}");
-    }
-
-    const data = await response.json();
-
-    if (!data.items || data.items.length === 0) {
-      showMessage('No se encontraron personajes con ese nombre.');
-      return;
-    }
-
-    // Si hay personajes, renderizarlos
-    renderTarjetas(data.items);
-  } catch (error) {
-    showMessage('Ocurrió un error al buscar personajes.');
-    console.error(error);
+    const respuesta = await fetch('https://dragonball-api.com/api/characters?page=1');
+    const data = await respuesta.json();
+    todosLosPersonajes = data.items;
+    renderTarjetas(todosLosPersonajes.slice(0, 12)); // Mostrar primeros 12
+  } catch {
+    showMessage('Error al cargar personajes.');
   }
 }
 
- 
+// Buscar localmente por nombre
+function buscarLocalmente(nombre) {
+  const nombreBuscado = nombre.toLowerCase();
+  const personajesFiltrados = todosLosPersonajes.filter(p =>
+    p.name.toLowerCase().includes(nombreBuscado)
+  );
 
+  if (personajesFiltrados.length === 0) {
+    showMessage("No se encontraron personajes con ese nombre.");
+  } else {
+    renderTarjetas(personajesFiltrados);
+  }
+}
 
+// Eventos
+btnBuscar.addEventListener('click', () => {
+  LimpiarPersonaje();
+  const nombre = buscarInput.value.trim();
+  if (!nombre) {
+    showMessage('Por favor, ingrese un nombre para buscar.');
+  } else {
+    buscarLocalmente(nombre);
+  }
+});
 
+btnLimpiar.addEventListener('click', () => {
+  buscarInput.value = '';
+  LimpiarPersonaje();
+  renderTarjetas(todosLosPersonajes.slice(0, 12));
+});
 
-
-
-
-
-
+// Cargar al iniciar
+window.addEventListener('DOMContentLoaded', cargarPersonajesInicio);
